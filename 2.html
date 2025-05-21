@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div style="font-size:1.3rem;font-weight:bold;">ShopEasy</div>
+        <nav>
+            <a href="#" onclick="showPage('catalog')">Catalog</a>
+            <a href="#" onclick="showPage('cart')">Cart</a>
+            <a href="#" onclick="showPage('login')">Login</a>
+            <a href="#" onclick="showPage('register')">Register</a>
+        </nav>
+    </header>
+    <main>
+        
+        <div id="registerPage" class="form-container" style="display:none;">
+            <h2>Register</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" required id="regUsername">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" required id="regPassword">
+                </div>
+                <button type="submit">Register</button>
+            </form>
+        </div>
+      
+        <div id="loginPage" class="form-container" style="display:none;">
+            <h2>Login</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" required id="loginUsername">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" required id="loginPassword">
+                </div>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+      
+        <div id="catalogPage" style="display:none;">
+            <h2>Product Catalog</h2>
+            <div class="catalog-grid" id="catalogGrid"></div>
+        </div>
+        
+        <div id="cartPage" style="display:none;">
+            <h2>Your Cart</h2>
+            <div class="cart-container" id="cartContainer"></div>
+            <div class="cart-total" id="cartTotal"></div>
+        </div>
+    </main>
+    <script>
+        
+        function showPage(page) {
+            document.getElementById('registerPage').style.display = 'none';
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('catalogPage').style.display = 'none';
+            document.getElementById('cartPage').style.display = 'none';
+            if(page === 'register') document.getElementById('registerPage').style.display = 'block';
+            if(page === 'login') document.getElementById('loginPage').style.display = 'block';
+            if(page === 'catalog') document.getElementById('catalogPage').style.display = 'block';
+            if(page === 'cart') document.getElementById('cartPage').style.display = 'block';
+        }
+        
+        showPage('catalog');
+
+        
+        const products = [
+            {id:1, name:'Wireless Headphones', price:59.99, img:'https://via.placeholder.com/120?text=Headphones'},
+            {id:2, name:'Smart Watch', price:99.99, img:'https://via.placeholder.com/120?text=Watch'},
+            {id:3, name:'Bluetooth Speaker', price:39.99, img:'https://via.placeholder.com/120?text=Speaker'},
+            {id:4, name:'Fitness Tracker', price:29.99, img:'https://via.placeholder.com/120?text=Tracker'},
+            {id:5, name:'USB Charger', price:14.99, img:'https://via.placeholder.com/120?text=Charger'},
+            {id:6, name:'VR Headset', price:79.99, img:'https://via.placeholder.com/120?text=VR+Headset'}
+        ];
+ 
+        let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        function saveCart() {
+            localStorage.setItem('cart', JSON.stringify(cart));
+        }
+        function renderCatalog() {
+            const grid = document.getElementById('catalogGrid');
+            grid.innerHTML = '';
+            products.forEach(prod => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.innerHTML = `
+                    <img src="${prod.img}" alt="${prod.name}">
+                    <h3>${prod.name}</h3>
+                    <div style="margin-bottom:0.5rem;">$${prod.price.toFixed(2)}</div>
+                    <button onclick="addToCart(${prod.id})">Add to Cart</button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+        function addToCart(id) {
+            const idx = cart.findIndex(item => item.id === id);
+            if(idx > -1) cart[idx].qty += 1;
+            else cart.push({id, qty:1});
+            saveCart();
+            alert('Added to cart!');
+        }
+        function renderCart() {
+            const container = document.getElementById('cartContainer');
+            const totalDiv = document.getElementById('cartTotal');
+            container.innerHTML = '';
+            let total = 0;
+            if(cart.length === 0) {
+                container.innerHTML = '<div>Your cart is empty.</div>';
+                totalDiv.textContent = '';
+                return;
+            }
+            cart.forEach(item => {
+                const prod = products.find(p => p.id === item.id);
+                total += prod.price * item.qty;
+                const div = document.createElement('div');
+                div.className = 'cart-item';
+                div.innerHTML = `
+                    <img src="${prod.img}" alt="${prod.name}">
+                    <div class="cart-details">
+                        <div><strong>${prod.name}</strong></div>
+                        <div>$${prod.price.toFixed(2)} x ${item.qty}</div>
+                    </div>
+                    <div class="cart-actions">
+                        <button onclick="updateQty(${item.id},-1)">-</button>
+                        <span>${item.qty}</span>
+                        <button onclick="updateQty(${item.id},1)">+</button>
+                        <button onclick="removeFromCart(${item.id})" style="background:#e74c3c;">&#10005;</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            totalDiv.textContent = 'Total: $' + total.toFixed(2);
+        }
+        function updateQty(id, delta) {
+            const idx = cart.findIndex(item => item.id === id);
+            if(idx > -1) {
+                cart[idx].qty += delta;
+                if(cart[idx].qty < 1) cart.splice(idx,1);
+                saveCart();
+                renderCart();
+            }
+        }
+        function removeFromCart(id) {
+            cart = cart.filter(item => item.id !== id);
+            saveCart();
+            renderCart();
+        }
+      
+        document.getElementById('registerForm').onsubmit = function(e) {
+            e.preventDefault();
+            localStorage.setItem('user', JSON.stringify({
+                username: document.getElementById('regUsername').value,
+                password: document.getElementById('regPassword').value
+            }));
+            alert('Registered! Please login.');
+            showPage('login');
+        };
+        document.getElementById('loginForm').onsubmit = function(e) {
+            e.preventDefault();
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            if(
+                user.username === document.getElementById('loginUsername').value &&
+                user.password === document.getElementById('loginPassword').value
+            ) {
+                alert('Login successful!');
+                showPage('catalog');
+            } else {
+                alert('Invalid credentials!');
+            }
+        };
+        
+        document.querySelectorAll('nav a').forEach(a => {
+            a.addEventListener('click', e => {
+                if(a.textContent === 'Catalog') renderCatalog();
+                if(a.textContent === 'Cart') renderCart();
+            });
+        });
+      
+        renderCatalog();
+    </script>
+</body>
+</html>
